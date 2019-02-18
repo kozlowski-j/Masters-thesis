@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from robust import Rob
 from mlxtend.frequent_patterns import apriori, association_rules
+import time
 
 
 class MBA():
@@ -36,23 +37,25 @@ class MBA():
         :param
         :return:
         """
-        support_par = 0.8
-        lift_par = 1.2
-        confidence_par = 0.7
+
         ## Apriori analysis + association rules creation
         # find association rules with default settings
-        support_par = min(support_par, 2000 / pivot_binary.shape[0])
+        # support_par = min(support_par, 2000 / pivot_binary.shape[0])
+        support_par = 0.12
+        lift_par = 1.2
+        confidence_par = 0.6
         frequent_itemsets = apriori(pivot_binary, min_support=support_par, use_colnames=True)
         rules = association_rules(frequent_itemsets, metric="lift", min_threshold=1)
 
         ## Add column with count of antecedents and consequents for each rule
-        rules["antecedent_len"] = rules["antecedents"].apply(lambda x: len(x))
-        rules["consequent_len"] = rules["consequents"].apply(lambda x: len(x))
+        rules["antecedent_len"] = rules["antecedents"].apply(lambda x: x.__len__())
+        rules["consequent_len"] = rules["consequents"].apply(lambda x: x.__len__())
 
         ## Filter rules by parametres
         rules = rules[(rules['lift'] >= lift_par) &
                       (rules['confidence'] >= confidence_par) &
-                      (rules['antecedent_len'] <= antecedent_length) &
+                      (rules['antecedent_len'] <= 10) &
+                      (rules['antecedent_len'] >= 2) &
                       (rules['consequent_len'] == 1)]
 
 
@@ -60,7 +63,7 @@ class MBA():
         pivot_binary_tr = pivot_binary.transpose()
         recom = {}
         pb = {}
-        for user in pivot_binary_tr:
+        for user in pivot_binary_tr.columns:
             products_bought = pivot_binary_tr.index[pivot_binary_tr[user] == 1]
             pb[user] = products_bought
             suitable_rules = []
@@ -76,12 +79,16 @@ class MBA():
         pb2 = pd.DataFrame.from_dict(pb, orient='index').stack().reset_index(level=1, drop=True).reset_index()
         pb2.columns = ['review_profilename', 'antecedents']
 
-        rule_cons = rules['consequents'].reset_index()
+        rule_cons = rules[['antecedents', 'consequents']].reset_index()
         rule_cons['consequents'] = [i for i, *_ in rule_cons['consequents']]  # change format from frozensets to normal
-        rule_cons.columns = ['Rule', 'consequents']
+        rule_cons['antecedents'] = [list(i) for i in rule_cons['antecedents']]
+        rule_cons.columns = ['Rule', 'antecedents', 'consequents']
         recom = recom.merge(rule_cons, on='Rule')
 
-        recom = recom[recom.isin(pb2)==False].dropna()
+        recom = np.where()
+
+
+        # recom = recom[recom.isin(pb2) == False].dropna()
 
         return rules
 
@@ -90,9 +97,14 @@ class MBA():
 
 if __name__ == '__main__':
     rob = Rob()
-    df = pd.read_pickle('beer_reviews.pkl')
-    df = rob.clean_data(df)
-    pivot_binary = rob.pivots(df)[0]
+    # df = pd.read_pickle('beer_reviews.pkl')
+    # df = pd.read_csv(r"C:\Users\jp_ko\OneDrive\Studia\SGH\Magisterka\beer_reviews.csv")
+    # df.to_pickle('beer_reviews_complete.pkl')
+    df = pd.read_pickle('beer_reviews_complete.pkl')
+    df2 = rob.clean_data(df)
+    df_desc = rob.descriptive(df)
+
+    pivot_binary = rob.pivots(df2)[0]
 
     print(df.head())
 
