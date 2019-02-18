@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 # import openpyxl
+import time
 
 class Rob():
     '''
@@ -17,6 +18,7 @@ class Rob():
         ['review_profilename', 'beer_id', 'beer_name', 'review_overall', 'user_review_count']
         :return: dataframe
         '''
+        start = time.time()
         # rewriting beer id's because after Tableau Prep cleaning
         # one beer name can have several id numbers
         tmp = pd.DataFrame(df.groupby(['beer_name'])['beer_beerid'].count())
@@ -41,6 +43,7 @@ class Rob():
         df2 = df2[df2['user_review_count'] > 19]
 
         df2 = df2[['review_profilename', 'beer_id', 'beer_name', 'review_overall', 'user_review_count']]
+        print("clean_data() -", round(time.time() - start, 2), "s")
         return df2
 
     def descriptive(self, df):
@@ -50,6 +53,7 @@ class Rob():
         :param df:
         :return: desc_df
         '''
+        start = time.time()
         desc = []
         for column in df.select_dtypes('O').columns:
             desc_current = {}
@@ -70,6 +74,8 @@ class Rob():
                                  'kurtosis': df[column].kurtosis()
                                  })
             desc.append(desc_current)
+
+        print("descriptive() -", round(time.time() - start), "s")
         return pd.DataFrame(desc)
 
     def pivots(self, df):
@@ -79,13 +85,14 @@ class Rob():
         :param df:
         :return: pivot_binary, pivot_df
         '''
+        start = time.time()
         pivot_df = df.pivot(index='review_profilename',
                             columns='beer_id',
                             values='review_overall')
         pivot_df.fillna(0, inplace=True)
 
         pivot_binary = pivot_df.applymap(lambda x: 1 if x > 0 else 0)
-
+        print("pivots() -", round(time.time() - start), "s")
         return pivot_binary, pivot_df
 
     def create_crossval(self, df, k_folds):
@@ -112,6 +119,20 @@ class Rob():
         train_df = df[df.isin(test_df[['review_profilename', 'beer_id']]) == False].dropna()
 
         return test_df, train_df
+
+    def spr_piwo(self, beer_id, df, df2):
+        beer_name = df2[df2['beer_id'] == 900]['beer_name'].unique()[0]
+        brewery_name = df[df['beer_name'] == '90 Minute IPA']['brewery_name'].unique()[0]
+        beer_style = df[df['beer_name'] == '90 Minute IPA'][ 'beer_style'].unique()[0]
+        beer_abv = df[df['beer_name'] == '90 Minute IPA']['beer_abv'].unique()[0]
+        avg_rating = round(df[df['beer_name'] == '90 Minute IPA']['review_overall'].mean())
+        print("Beer info:\n"
+              "- beer name: {}\n"
+              "- brewery name: {}\n"
+              "- beer style: {}\n"
+              "- beer abv: {}\n"
+              "- average rating: {}\n".format(beer_name, brewery_name, beer_style, beer_abv, avg_rating))
+
 
     # def run(self):
     #     #histogram browarow
