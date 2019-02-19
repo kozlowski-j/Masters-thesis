@@ -29,16 +29,16 @@ class MBA():
         return len([pattern.findall(i) for i in rules_columns if len(pattern.findall(i)) > 0])
 
 
-    def mbasket(self, pivot_binary, min_potential_value):
+    def mbasket(self, pivot_binary, support_par):
         """
         :param
         :return:
         """
-
+        start = time.time()
         ## Apriori analysis + association rules creation
         # find association rules with default settings
         # support_par = min(support_par, 2000 / pivot_binary.shape[0])
-        support_par = 0.12
+        # support_par = 0.12
         lift_par = 1.2
         confidence_par = 0.6
         frequent_itemsets = apriori(pivot_binary, min_support=support_par, use_colnames=True)
@@ -93,28 +93,30 @@ class MBA():
         recom_new = recom_new[recom_new['beer_already_known'] != 1][['review_profilename', 'Rule',
                                                                      'antecedents', 'consequents']]
 
+        print("mbasket() -", round(time.time() - start), "s")
+        return rule_cons, recom_new
 
-        return rules
-
-for col in recom_new.columns:
-    if col != 'antecedents':
-        print(recom_new[col].value_counts().head(10))
 
 
 
 if __name__ == '__main__':
     rob = Rob()
+    mba = MBA()
     # df = pd.read_pickle('beer_reviews.pkl')
     # df = pd.read_csv(r"C:\Users\jp_ko\OneDrive\Studia\SGH\Magisterka\beer_reviews.csv")
     # df.to_pickle('beer_reviews_complete.pkl')
     df = pd.read_pickle('beer_reviews_complete.pkl')
     df2 = rob.clean_data(df)
     df_desc = rob.descriptive(df)
+    # pivot_binary = rob.pivots(df2)[0]
 
-    pivot_binary = rob.pivots(df2)[0]
+    recom, rules = mba.mbasket(rob.pivots(df2)[0], 0.12)
 
-    print(df.head())
-
-    exit()
+    # for col in recom.columns:
+    #     if col != 'antecedents':
+    #         print(recom[col].value_counts().head(10))
+    print(rules.head(), "\n_________________\n")
+    print(recom.head())
+    # exit()
 
 
