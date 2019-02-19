@@ -22,9 +22,6 @@ class MBA():
         recommendations = recommendations.sort_values(['ids', 'm', 'antecedent_len'], ascending=False)
         return recommendations[~recommendations['ids'].duplicated()]
 
-    def from_frozenset(self, series):
-        # change format from frozensets to normal
-        return [i for i, *_ in series]
 
     def how_many_output_antecedents(self, rules_columns):
         # this is to avoid exceptions in legacy formatting
@@ -77,7 +74,7 @@ class MBA():
 
         # products bought - zeby wykluczyc te produkty z rekomendacji
         pb2 = pd.DataFrame.from_dict(pb, orient='index').stack().reset_index(level=1, drop=True).reset_index()
-        pb2.columns = ['review_profilename', 'antecedents']
+        pb2.columns = ['review_profilename', 'antecedents1']
 
         rule_cons = rules[['antecedents', 'consequents']].reset_index()
         rule_cons['consequents'] = [i for i, *_ in rule_cons['consequents']]  # change format from frozensets to normal
@@ -85,13 +82,23 @@ class MBA():
         rule_cons.columns = ['Rule', 'antecedents', 'consequents']
         recom = recom.merge(rule_cons, on='Rule')
 
-        recom = np.where()
+        # exclude from recommendations products already bought
+        recom_already_satisfied = pb2.merge(recom, left_on=['review_profilename', 'antecedents1'],
+                                                   right_on=['review_profilename', 'consequents'])
+        recom_already_satisfied['beer_already_known'] = 1
 
+        recom_new = recom.merge(recom_already_satisfied[['review_profilename', 'Rule', 'consequents', 'beer_already_known']],
+                                on=['review_profilename', 'Rule', 'consequents'],
+                                how='left')
+        recom_new = recom_new[recom_new['beer_already_known'] != 1][['review_profilename', 'Rule',
+                                                                     'antecedents', 'consequents']]
 
-        # recom = recom[recom.isin(pb2) == False].dropna()
 
         return rules
 
+for col in recom_new.columns:
+    if col != 'antecedents':
+        print(recom_new[col].value_counts().head(10))
 
 
 
