@@ -38,7 +38,7 @@ class MBA():
         ## Apriori analysis + association rules creation
         # find association rules with default settings
         # support_par = min(support_par, 2000 / pivot_binary.shape[0])
-        # support_par = 0.12
+        support_par = 0.12
         lift_par = 1.2
         confidence_par = 0.6
         frequent_itemsets = apriori(pivot_binary, min_support=support_par, use_colnames=True)
@@ -81,6 +81,7 @@ class MBA():
         rule_cons['antecedents'] = [list(i) for i in rule_cons['antecedents']]
         rule_cons.columns = ['Rule', 'antecedents', 'consequents']
         recom = recom.merge(rule_cons, on='Rule')
+        recom.drop_duplicates(['review_profilename', 'consequents'], keep='first', inplace=True)
 
         # exclude from recommendations products already bought
         recom_already_satisfied = pb2.merge(recom, left_on=['review_profilename', 'antecedents1'],
@@ -108,7 +109,7 @@ if __name__ == '__main__':
     df = pd.read_pickle('beer_reviews_complete.pkl')
     df2 = rob.clean_data(df)
     df_desc = rob.descriptive(df)
-    # pivot_binary = rob.pivots(df2)[0]
+    pivot_binary = rob.pivots(df2)[0]
 
     recom, rules = mba.mbasket(rob.pivots(df2)[0], 0.12)
 
