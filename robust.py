@@ -120,18 +120,24 @@ class Rob():
 
         return test_df, train_df
 
-    def spr_piwo(self, beer_id, df, df2):
-        beer_name = df2[df2['beer_id'] == 900]['beer_name'].unique()[0]
-        brewery_name = df[df['beer_name'] == '90 Minute IPA']['brewery_name'].unique()[0]
-        beer_style = df[df['beer_name'] == '90 Minute IPA'][ 'beer_style'].unique()[0]
-        beer_abv = df[df['beer_name'] == '90 Minute IPA']['beer_abv'].unique()[0]
-        avg_rating = round(df[df['beer_name'] == '90 Minute IPA']['review_overall'].mean())
+    def spr_piwo(self, beer_id, df, df2, rule_cons):
+        beer_name = df2[df2['beer_id'] == beer_id]['beer_name'].unique()[0]
+        brewery_name = df[df['beer_name'] == beer_name]['brewery_name'].unique()[0]
+        beer_style = df[df['beer_name'] == beer_name][ 'beer_style'].unique()[0]
+        beer_abv = df[df['beer_name'] == beer_name]['beer_abv'].unique()[0]
+        avg_rating = round(df[df['beer_name'] == beer_name]['review_overall'].mean(), 2)
+        rev_cnt = df[df['beer_name'] == beer_name].index.size
+        apprs_cnt = rule_cons[rule_cons['consequents'].isin([beer_id])]['Rule'].unique().size
+        apprs_cnt_prc = rule_cons['Rule'].unique().size
         print("Beer info:\n"
               "- beer name: {}\n"
               "- brewery name: {}\n"
               "- beer style: {}\n"
               "- beer abv: {}\n"
-              "- average rating: {}\n".format(beer_name, brewery_name, beer_style, beer_abv, avg_rating))
+              "- number of reviews: {}\n"
+              "- average rating: {}\n"
+              "- appears as consequent in {} ({}%) rules\n".format(beer_name, brewery_name, beer_style,
+                                                             beer_abv, rev_cnt, avg_rating, apprs_cnt, apprs_cnt_prc))
 
 
     # def run(self):
