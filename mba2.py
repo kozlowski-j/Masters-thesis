@@ -14,23 +14,17 @@ class MBA():
     def find_freq_itemsets_apriori(self, pivot_binary, support_par):
         return apriori(pivot_binary, min_support=support_par, use_colnames=True)
 
-    def find_freq_itemsets_fp_growth(self, pivot_binary, support_par):
-        # data format for FP-growth algorithm
-        pivot_beer_ids = pivot_binary.copy()
-        for col in pivot_beer_ids.columns:
-            pivot_beer_ids[col] = pivot_beer_ids[col] * int(col)
-        transactions = [[i for i in lst if i != 0] for lst in pivot_beer_ids.values]
+    def find_freq_itemsets_fp_growth(self, transactions, support_par):
 
         min_support = round(support_par * len(transactions))
-        fp_sets = find_frequent_itemsets(transactions, min_support)
 
-        itsets = pd.DataFrame(columns=['support', 'itemsets'])
-        for i, itemset in enumerate(fp_sets):
-            itsets.loc[i, 'support'] = round(itemset[1] / len(transactions), 5)
-            itsets.loc[i, 'itemsets'] = itemset[0]
+        fp_sets = find_frequent_itemsets(transactions, min_support)
+        itsets = pd.DataFrame(fp_sets,
+                              columns=['itemsets', 'support'])
+        itsets['support'] = round(itsets['support'] / len(transactions), 5)
         return itsets
 
-    def mbasket(self, pivot_binary, support_par, method='ap'):
+    def mbasket(self, data_p, support_par, method='ap'):
         """
         :param
         :return:
@@ -43,11 +37,11 @@ class MBA():
         confidence_par = 0.6
         if method == 'ap':
             start = time.time()
-            frequent_itemsets = self.find_freq_itemsets_apriori(pivot_binary, support_par)
+            frequent_itemsets = self.find_freq_itemsets_apriori(data_p[0], support_par)
             print("find_freq_itemsets_apriori() -", round(time.time() - start), "s")
         if method == 'fp':
             start = time.time()
-            frequent_itemsets = self.find_freq_itemsets_fp_growth(pivot_binary, support_par)
+            frequent_itemsets = self.find_freq_itemsets_fp_growth(data_p[1], support_par)
             print("find_freq_itemsets_fp_growth() -", round(time.time() - start), "s")
 
         rules = association_rules(frequent_itemsets, metric="lift", min_threshold=1)
@@ -65,7 +59,7 @@ class MBA():
 
 
         # users with antedecents from the rules calculated above
-        pivot_binary_tr = pivot_binary.transpose()
+        pivot_binary_tr = data_p[0].transpose()
         recom = {}
         pb = {}
         for user in pivot_binary_tr.columns:

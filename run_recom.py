@@ -14,10 +14,10 @@ if __name__ == '__main__':
     df2 = rob.clean_data(df)
     df_rdy = rob.limit_reviews(df2, 4)
     # print(rob.descriptive(df))
-    pivot_binary = rob.pivots(df_rdy)[0]
+    data_p = rob.prep_data_format(df_rdy)
 
-    recom, rules = mba.mbasket(pivot_binary, 0.1, 'ap')
-    recom2, rules2 = mba.mbasket(pivot_binary, 0.1, 'fp')
+    recom, rules = mba.mbasket(data_p, 0.1, 'ap')
+    recom2, rules2 = mba.mbasket(data_p, 0.1, 'fp')
 
     # for col in recom.columns:
     #     if col != 'antecedents':

@@ -78,7 +78,7 @@ class Rob():
         print("descriptive() -", round(time.time() - start), "s")
         return pd.DataFrame(desc)
 
-    def pivots(self, df):
+    def prep_data_format(self, df):
         '''
         Creates pivot table with binary values (instead of review_overall values).
 
@@ -86,14 +86,22 @@ class Rob():
         :return: pivot_binary, pivot_df
         '''
         start = time.time()
+        # data format for apriori algorithm
         pivot_df = df.pivot(index='review_profilename',
                             columns='beer_id',
                             values='review_overall')
         pivot_df.fillna(0, inplace=True)
-
         pivot_binary = pivot_df.applymap(lambda x: 1 if x > 0 else 0)
-        print("pivots() -", round(time.time() - start), "s")
-        return pivot_binary, pivot_df
+
+        # data format for FP-growth algorithm
+        pivot_beer_ids = pivot_binary.copy()
+        for col in pivot_beer_ids.columns:
+            pivot_beer_ids[col] = pivot_beer_ids[col] * int(col)
+        transactions = [[i for i in lst if i != 0] for lst in pivot_beer_ids.values]
+
+        print("prep_data_format() -", round(time.time() - start), "s")
+        return pivot_binary, transactions, pivot_df
+
 
     def create_crossval(self, df, k_folds):
         '''
