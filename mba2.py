@@ -2,46 +2,54 @@ import pandas as pd
 import numpy as np
 from robust import Rob
 from mlxtend.frequent_patterns import apriori, association_rules
+from fp_growth2 import find_frequent_itemsets
 import time
 
 
 class MBA():
     '''
-    Market Basket Analysis
+    Market Basket Analysis - apriori
     '''
 
-    antecedent_length = 5  # how deep to drill
+    def find_freq_itemsets_apriori(self, pivot_binary, support_par):
+        return apriori(pivot_binary, min_support=support_par, use_colnames=True)
 
-    def rule_param_adjust(self, support, confidenct, lift):
-        # arbitrary coefficients adjusting the rule parameteres in order to choose the best rule for user
-        # consider to use LEVERAGE or CONVICTION from mlextend instead
-        return 0.4 * support + 0.5 * confidenct + 0.1 * lift
+    def find_freq_itemsets_fp_growth(self, pivot_binary, support_par):
+        # data format for FP-growth algorithm
+        pivot_beer_ids = pivot_binary.copy()
+        for col in pivot_beer_ids.columns:
+            pivot_beer_ids[col] = pivot_beer_ids[col] * int(col)
+        transactions = [[i for i in lst if i != 0] for lst in pivot_beer_ids.values]
 
-    def recommendation_choice(self, recommendations):
-        # for each cust/prod sort recommendations by id, adjusted params and antedecent length. Take the first only.
-        recommendations = recommendations.sort_values(['ids', 'm', 'antecedent_len'], ascending=False)
-        return recommendations[~recommendations['ids'].duplicated()]
+        min_support = round(support_par * len(transactions))
+        fp_sets = find_frequent_itemsets(transactions, min_support)
 
+        itsets = pd.DataFrame(columns=['support', 'itemsets'])
+        for i, itemset in enumerate(fp_sets):
+            itsets.loc[i, 'support'] = round(itemset[1] / len(transactions), 5)
+            itsets.loc[i, 'itemsets'] = itemset[0]
+        return itsets
 
-    def how_many_output_antecedents(self, rules_columns):
-        # this is to avoid exceptions in legacy formatting
-        pattern = re.compile('^lhs')
-        return len([pattern.findall(i) for i in rules_columns if len(pattern.findall(i)) > 0])
-
-
-    def mbasket(self, pivot_binary, support_par):
+    def mbasket(self, pivot_binary, support_par, method='ap'):
         """
         :param
         :return:
         """
+
         start = time.time()
         ## Apriori analysis + association rules creation
         # find association rules with default settings
-        # support_par = min(support_par, 2000 / pivot_binary.shape[0])
-        support_par = 0.12
         lift_par = 1.2
         confidence_par = 0.6
-        frequent_itemsets = apriori(pivot_binary, min_support=support_par, use_colnames=True)
+        if method == 'ap':
+            start = time.time()
+            frequent_itemsets = self.find_freq_itemsets_apriori(pivot_binary, support_par)
+            print("find_freq_itemsets_apriori() -", round(time.time() - start), "s")
+        if method == 'fp':
+            start = time.time()
+            frequent_itemsets = self.find_freq_itemsets_fp_growth(pivot_binary, support_par)
+            print("find_freq_itemsets_fp_growth() -", round(time.time() - start), "s")
+
         rules = association_rules(frequent_itemsets, metric="lift", min_threshold=1)
 
         ## Add column with count of antecedents and consequents for each rule
@@ -98,26 +106,5 @@ class MBA():
         return rule_cons, recom_new
 
 
-
-
-if __name__ == '__main__':
-    rob = Rob()
-    mba = MBA()
-    # df = pd.read_pickle('beer_reviews.pkl')
-    # df = pd.read_csv(r"C:\Users\jp_ko\OneDrive\Studia\SGH\Magisterka\beer_reviews.csv")
-    # df.to_pickle('beer_reviews_complete.pkl')
-    df = pd.read_pickle('beer_reviews_complete.pkl')
-    df2 = rob.clean_data(df)
-    df_desc = rob.descriptive(df)
-    pivot_binary = rob.pivots(df2)[0]
-
-    recom, rules = mba.mbasket(rob.pivots(df2)[0], 0.12)
-
-    # for col in recom.columns:
-    #     if col != 'antecedents':
-    #         print(recom[col].value_counts().head(10))
-    print(rules.head(), "\n_________________\n")
-    print(recom.head())
-    # exit()
 
 
