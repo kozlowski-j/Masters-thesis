@@ -16,11 +16,14 @@ if __name__ == '__main__':
     # print(rob.descriptive(df))
     pivot_binary = rob.pivots(df_rdy)[0]
 
-    recom, rules = mba.mbasket(pivot_binary, 0.1)
+    recom, rules = mba.mbasket(pivot_binary, 0.1, 'ap')
+    recom2, rules2 = mba.mbasket(pivot_binary, 0.1, 'fp')
 
     # for col in recom.columns:
     #     if col != 'antecedents':
     #         print(recom[col].value_counts().head(10))
     print(rules.head(), "\n_________________\n")
-    print(recom.head())
+    print(rules2.head(), "\n_________________\n")
+    print(recom.head(), "\n_________________\n")
+    print(recom2.head())
     # exit()
