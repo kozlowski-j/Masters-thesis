@@ -139,37 +139,10 @@ class Rob():
               "- appears as consequent in {} ({}%) rules\n".format(beer_name, brewery_name, beer_style,
                                                              beer_abv, rev_cnt, avg_rating, apprs_cnt, apprs_cnt_prc))
 
+    def limit_reviews(self, df, review_overall_cutoff_value):
+        return df[df['review_overall'] >= review_overall_cutoff_value]
 
-    # def run(self):
-    #     #histogram browarow
-    #     df['brewery_name'].value_counts()[np.abs(df['brewery_name'].value_counts() - \
-    #                                                    df['brewery_name'].value_counts().mean()) <= \
-    #                                             (2*df['brewery_name'].value_counts().std())].hist()
-    #     # plt.show()
-    #
-    #
-    #     df['review_profilename'].value_counts()[np.abs(df['review_profilename'].value_counts() - \
-    #                                                    df['review_profilename'].value_counts().mean()) <= \
-    #                                             (2*df['review_profilename'].value_counts().std())].hist()
-    #
-    #
-    #     writer = pd.ExcelWriter('descriptive_analytics.xlsx')
-    #     desc_numeric.to_excel(writer, 'desc_numeric')
-    #     desc_non_numeric.to_excel(writer, 'desc_non_numeric')
-    #     writer.save()
-    #     return
 
-# rob = Rob()
-# # data prep
-# # df = pd.read_csv('beer_reviews_tableau_cleaned.csv', sep=';', decimal=',')
-# df = pd.read_pickle('beer_reviews.pkl')
-# df = rob.clean_data(df)
-#
-# test, train = rob.create_crossval(df, 5)
-#
-# pivot_binary = rob.pivots(train)[0]
-#
-# desc2 = rob.descriptive(df)
 
 
 
