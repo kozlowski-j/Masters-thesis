@@ -7,23 +7,23 @@ from mba2 import MBA
 if __name__ == '__main__':
     rob = Rob()
     mba = MBA()
-    # df = pd.read_pickle('beer_reviews.pkl')
-    # df = pd.read_csv(r"C:\Users\jp_ko\OneDrive\Studia\SGH\Magisterka\beer_reviews.csv")
-    # df.to_pickle('beer_reviews_complete.pkl')
     df = pd.read_pickle('beer_reviews_complete.pkl')
     df2 = rob.clean_data(df)
     df_rdy = rob.limit_reviews(df2, 4)
-    # print(rob.descriptive(df))
-    data_p = rob.prep_data_format(df_rdy)
+    cv = rob.create_crossval(df_rdy, 10)
+    comp_tab = []
+    for k in range(0, 10):
+        test_df = cv[k].copy()
+        train_df = df_rdy[df_rdy.isin(test_df[['review_profilename', 'beer_id']]) == False].dropna()
+        data_p = rob.prep_data_format(train_df)
 
-    recom, rules = mba.mbasket(data_p, 0.1, 'ap')
-    recom2, rules2 = mba.mbasket(data_p, 0.1, 'fp')
+        rules, recom = mba.mbasket(data_p, 0.08, 'ap')
+        comp_tab.append(rob.comparer(recom, test_df, k, 'ap'))
+        rules2, recom2 = mba.mbasket(data_p, 0.08, 'fp')
+        comp_tab.append(rob.comparer(recom2, test_df, k, 'fp'))
 
-    # for col in recom.columns:
-    #     if col != 'antecedents':
-    #         print(recom[col].value_counts().head(10))
-    print(rules.head(), "\n_________________\n")
-    print(rules2.head(), "\n_________________\n")
-    print(recom.head(), "\n_________________\n")
-    print(recom2.head())
-    # exit()
+    print(pd.DataFrame(comp_tab))
+    # print(rules.head(), "\n_________________\n")
+    # print(rules2.head(), "\n_________________\n")
+    # print(recom.head(), "\n_________________\n")
+    # print(recom2.head())

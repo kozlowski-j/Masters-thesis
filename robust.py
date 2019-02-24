@@ -103,7 +103,7 @@ class Rob():
         return pivot_binary, transactions, pivot_df
 
 
-    def create_crossval(self, df, k_folds):
+    def create_crossval(self, df_rdy, k_folds):
         '''
         Transforms data frame into test set and train set.
         // Still needs rethinking and some work on it
@@ -112,21 +112,23 @@ class Rob():
         :param k_folds: number of subsets for multiple cross-val
         :return: test_df, train_df
         '''
-        t500 = df[df['user_review_count'] > 500]['review_profilename'].unique()
+        start = time.time()
+        df_rdy['user_review_count'] = df_rdy.groupby('review_profilename')['review_overall'].transform('count')
+        top_500_list = df_rdy[df_rdy['user_review_count'] > 500]['review_profilename'].unique()
 
         cv = {}
-        t500_df = df[df['review_profilename'].isin(t500) == True].copy()
+        t500_df = df_rdy[df_rdy['review_profilename'].isin(top_500_list) == True].copy()
         _cv = t500_df.copy()
         for k in range(0, k_folds):
-            cv[k] = _cv.groupby('review_profilename', group_keys=False).apply(
-                lambda x: x.sample(int(1/k_folds * x['user_review_count'].mean())))
-            cv_list = cv[k][['review_profilename', 'beer_id']]
-            _cv = _cv[_cv.isin(cv_list) == False].dropna()
-
-        test_df = cv[k]
-        train_df = df[df.isin(test_df[['review_profilename', 'beer_id']]) == False].dropna()
-
-        return test_df, train_df
+            if k == k_folds - 1:
+                cv[k] = _cv     # last fold takes leftovers (approx. 5% more)
+            else:
+                cv[k] = _cv.groupby('review_profilename', group_keys=False).apply(
+                    lambda x: x.sample(int(1/k_folds * x['user_review_count'].mean())))
+                cv_list = cv[k][['review_profilename', 'beer_id']]
+                _cv = _cv[_cv.isin(cv_list) == False].dropna()
+        print("crossval() -", round(time.time() - start), "s")
+        return cv
 
     def spr_piwo(self, beer_id, df, df2, rule_cons):
         beer_name = df2[df2['beer_id'] == beer_id]['beer_name'].unique()[0]
@@ -148,8 +150,32 @@ class Rob():
                                                              beer_abv, rev_cnt, avg_rating, apprs_cnt, apprs_cnt_prc))
 
     def limit_reviews(self, df, review_overall_cutoff_value):
-        return df[df['review_overall'] >= review_overall_cutoff_value]
+        return df[df['review_overall'] >= review_overall_cutoff_value].copy()
 
+    def comparer(self, recom, test_df, k, algorithm):
+        start = time.time()
+        comp = pd.merge(recom[['review_profilename', 'antecedents', 'consequents']],
+                        test_df[['review_profilename', 'beer_id', 'review_overall', 'user_review_count']],
+                        left_on=['review_profilename', 'consequents'],
+                        right_on=['review_profilename', 'beer_id'],
+                        how='right')
+        comp['hit'] = np.where(comp['consequents'] == comp['beer_id'], 1, 0)
+        precision = comp['hit'].sum() / recom.shape[0]
+        recall = comp['hit'].sum() / test_df.shape[0]
+        f1 = (2 * precision * recall) / (precision + recall)
+
+        comp_tab_temp = {'fold': k,
+                         'precision': precision,
+                         'recall': recall,
+                         'f1': f1,
+                         'algorithm': algorithm}
+
+        # statistics per user - TO DO
+        # prec_users = pd.DataFrame(comp.groupby('review_profilename')['hit'].sum() /
+        #               recom.groupby('review_profilename')['consequents'].count()).dropna()
+        # prec_users['hits'] = comp.groupby('review_profilename')['hit'].sum().dropna()
+        print("comparer() -", round(time.time() - start), "s")
+        return comp_tab_temp
 
 
 
