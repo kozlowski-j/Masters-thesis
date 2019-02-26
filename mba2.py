@@ -2,7 +2,8 @@ import pandas as pd
 import numpy as np
 from robust import Rob
 from mlxtend.frequent_patterns import apriori, association_rules
-from fp_growth2 import find_frequent_itemsets
+from fp_growth3 import find_frequent_itemsets
+from eclat import eclat
 import time
 
 
@@ -10,6 +11,10 @@ class MBA():
     '''
     Market Basket Analysis - apriori
     '''
+
+    # def find_freq_itemsets_eclat(self, transactions, support_par):
+    #
+    #     return apriori(pivot_binary, min_support=support_par, use_colnames=True)
 
     def find_freq_itemsets_apriori(self, pivot_binary, support_par):
         return apriori(pivot_binary, min_support=support_par, use_colnames=True)
@@ -29,7 +34,6 @@ class MBA():
         :param
         :return:
         """
-
         start = time.time()
         ## Apriori analysis + association rules creation
         # find association rules with default settings
@@ -38,11 +42,13 @@ class MBA():
         if method == 'ap':
             start = time.time()
             frequent_itemsets = self.find_freq_itemsets_apriori(data_p[0], support_par)
-            print("find_freq_itemsets_apriori() -", round(time.time() - start), "s")
+            run_time = round(time.time() - start)
+            print("find_freq_itemsets_apriori() -", run_time, "s")
         if method == 'fp':
             start = time.time()
             frequent_itemsets = self.find_freq_itemsets_fp_growth(data_p[1], support_par)
-            print("find_freq_itemsets_fp_growth() -", round(time.time() - start), "s")
+            run_time = round(time.time() - start)
+            print("find_freq_itemsets_fp_growth() -", run_time, "s")
 
         rules = association_rules(frequent_itemsets, metric="lift", min_threshold=1)
 
@@ -56,7 +62,6 @@ class MBA():
                       (rules['antecedent_len'] <= 10) &
                       (rules['antecedent_len'] >= 2) &
                       (rules['consequent_len'] == 1)]
-
 
         # users with antedecents from the rules calculated above
         pivot_binary_tr = data_p[0].transpose()
@@ -89,15 +94,15 @@ class MBA():
         recom_already_satisfied = pb2.merge(recom, left_on=['review_profilename', 'antecedents1'],
                                                    right_on=['review_profilename', 'consequents'])
         recom_already_satisfied['beer_already_known'] = 1
+        sum_recom_already_satisfied = recom_already_satisfied['beer_already_known'].sum()
 
         recom_new = recom.merge(recom_already_satisfied[['review_profilename', 'Rule', 'consequents', 'beer_already_known']],
                                 on=['review_profilename', 'Rule', 'consequents'],
                                 how='left')
         recom_new = recom_new[recom_new['beer_already_known'] != 1][['review_profilename', 'Rule',
                                                                      'antecedents', 'consequents']]
-
         print("mbasket() -", round(time.time() - start), "s")
-        return rule_cons, recom_new
+        return rule_cons, recom_new, run_time, sum_recom_already_satisfied
 
 
 

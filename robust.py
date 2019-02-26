@@ -152,7 +152,7 @@ class Rob():
     def limit_reviews(self, df, review_overall_cutoff_value):
         return df[df['review_overall'] >= review_overall_cutoff_value].copy()
 
-    def comparer(self, recom, test_df, k, algorithm):
+    def comparer(self, recom, test_df, k, algorithm, run_time, sum_recom_already_satisfied):
         start = time.time()
         comp = pd.merge(recom[['review_profilename', 'antecedents', 'consequents']],
                         test_df[['review_profilename', 'beer_id', 'review_overall', 'user_review_count']],
@@ -168,7 +168,9 @@ class Rob():
                          'precision': precision,
                          'recall': recall,
                          'f1': f1,
-                         'algorithm': algorithm}
+                         'algorithm': algorithm,
+                         'run_time': run_time,
+                         'recom_alr_satisf': sum_recom_already_satisfied}
 
         # statistics per user - TO DO
         # prec_users = pd.DataFrame(comp.groupby('review_profilename')['hit'].sum() /
@@ -177,7 +179,18 @@ class Rob():
         print("comparer() -", round(time.time() - start), "s")
         return comp_tab_temp
 
+    def mbasket_param_analysis(self, df_rdy):
+        pivot_df = df_rdy.pivot(index='review_profilename',
+                            columns='beer_id',
+                            values='review_overall')
+        pivot_df.fillna(0, inplace=True)
+        pivot_binary = pivot_df.applymap(lambda x: 1 if x > 0 else 0)
 
+        support_table = pd.DataFrame(df_rdy.groupby('beer_id')['beer_id'].count()).sort_values(by='beer_id', ascending=False)
+        support_table.columns = ['count']
+        support_table['support'] = support_table['count'] / pivot_binary.shape[0]
+        # support_table[support_table['support'] > 0.1].shape
+        return support_table
 
 
 
