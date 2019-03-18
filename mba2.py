@@ -29,7 +29,7 @@ class MBA():
         itsets['support'] = round(itsets['support'] / len(transactions), 5)
         return itsets
 
-    def mbasket(self, data_p, support_par, method='ap'):
+    def mbasket(self, data_p, support_par, confidence_par, method='ap'):
         """
         :param
         :return:
@@ -38,7 +38,7 @@ class MBA():
         ## Apriori analysis + association rules creation
         # find association rules with default settings
         lift_par = 1.2
-        confidence_par = 0.6
+        # confidence_par = confidence_par
         if method == 'ap':
             start = time.time()
             frequent_itemsets = self.find_freq_itemsets_apriori(data_p[0], support_par)
@@ -60,7 +60,6 @@ class MBA():
         rules = rules[(rules['lift'] >= lift_par) &
                       (rules['confidence'] >= confidence_par) &
                       (rules['antecedent_len'] <= 10) &
-                      (rules['antecedent_len'] >= 2) &
                       (rules['consequent_len'] == 1)]
 
         # users with antedecents from the rules calculated above
@@ -101,8 +100,10 @@ class MBA():
                                 how='left')
         recom_new = recom_new[recom_new['beer_already_known'] != 1][['review_profilename', 'Rule',
                                                                      'antecedents', 'consequents']]
-        print("mbasket() -", round(time.time() - start), "s")
-        return rule_cons, recom_new, run_time, sum_recom_already_satisfied
+        mba_time = round(time.time() - start)
+        print("mbasket() -", mba_time, "s")
+
+        return [rule_cons, recom_new, run_time, mba_time, sum_recom_already_satisfied]
 
 
 

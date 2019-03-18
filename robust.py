@@ -28,7 +28,7 @@ class Rob():
         df2 = df.merge(tmp[['beer_name', 'beer_id']], on='beer_name')
 
         # remove repeated reviews (when user reviews the same beer more than once
-        # review_overall is taken as mean out of all the repeated reviews
+        # review_overall is taken as mean out of all the repeated reviews)
         df2['dups'] = df2.groupby(['review_profilename', 'beer_name'])['beer_id'].transform('count')
         df2['mean_overall'] = df2.groupby(['review_profilename', 'beer_name'])['review_overall'].transform('mean')
         df2['review_overall'] = np.where(df2['dups'] > 1,
@@ -99,9 +99,15 @@ class Rob():
             pivot_beer_ids[col] = pivot_beer_ids[col] * int(col)
         transactions = [[i for i in lst if i != 0] for lst in pivot_beer_ids.values]
 
+        # from mlxtend.preprocessing import TransactionEncoder
+        # te = TransactionEncoder()
+        # te_ary = te.fit(transactions).transform(transactions)
+        # transactions_sparse = te.fit(transactions).transform(transactions, sparse=True)
+        # sparse_df = pd.SparseDataFrame(te_ary, columns=te.columns_, default_fill_value=False)
+        #
         print("prep_data_format() -", round(time.time() - start), "s")
         return pivot_binary, transactions, pivot_df
-
+        # return sparse_df, transactions_sparse, pivot_df
 
     def create_crossval(self, df_rdy, k_folds):
         '''
@@ -152,8 +158,9 @@ class Rob():
     def limit_reviews(self, df, review_overall_cutoff_value):
         return df[df['review_overall'] >= review_overall_cutoff_value].copy()
 
-    def comparer(self, recom, test_df, k, algorithm, run_time, sum_recom_already_satisfied):
+    def comparer(self, test_df, k, algorithm, support_par, confidence_par, results):
         start = time.time()
+        recom = results[1]
         comp = pd.merge(recom[['review_profilename', 'antecedents', 'consequents']],
                         test_df[['review_profilename', 'beer_id', 'review_overall', 'user_review_count']],
                         left_on=['review_profilename', 'consequents'],
@@ -169,8 +176,12 @@ class Rob():
                          'recall': recall,
                          'f1': f1,
                          'algorithm': algorithm,
-                         'run_time': run_time,
-                         'recom_alr_satisf': sum_recom_already_satisfied}
+                         'frq itms run_time [s]': results[2],
+                         'mba time [s]': results[3],
+                         'recom_alr_satisf': results[4],
+                         'min. support': support_par,
+                         'min. confidence': confidence_par,
+                         'no. of recom': recom.shape[0]}
 
         # statistics per user - TO DO
         # prec_users = pd.DataFrame(comp.groupby('review_profilename')['hit'].sum() /
