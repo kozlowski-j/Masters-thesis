@@ -1,12 +1,12 @@
 import pandas as pd
 import numpy as np
 from robust import Rob
-from mlxtend.frequent_patterns import apriori, association_rules
-from fp_growth3 import find_frequent_itemsets
+from fim import apriori, eclat, fpgrowth, fim, sam, relim
+from mlxtend.frequent_patterns import association_rules
 import time
 
 
-class MBA():
+class MBA_fim():
     '''
     Market Basket Analysis - apriori
     '''
@@ -15,17 +15,14 @@ class MBA():
     #
     #     return apriori(pivot_binary, min_support=support_par, use_colnames=True)
 
-    def find_freq_itemsets_apriori(self, pivot_binary, support_par):
-        return apriori(pivot_binary, min_support=support_par, use_colnames=True)
+    def find_freq_itemsets_apriori(self, transactions, support_par):
+        itsets = pd.DataFrame(apriori(transactions, supp=support_par*100, zmin=1, report='s'),
+                              columns=['itemsets', 'support'])
+        return itsets
 
     def find_freq_itemsets_fp_growth(self, transactions, support_par):
-
-        min_support = round(support_par * len(transactions))
-
-        fp_sets = find_frequent_itemsets(transactions, min_support)
-        itsets = pd.DataFrame(fp_sets,
+        itsets = pd.DataFrame(fpgrowth(transactions, supp=support_par*100, zmin=1, report='s'),
                               columns=['itemsets', 'support'])
-        itsets['support'] = round(itsets['support'] / len(transactions), 5)
         return itsets
 
     def mbasket(self, data_p, support_par, confidence_par, method='ap'):
@@ -39,27 +36,33 @@ class MBA():
         lift_par = 1.2
         # confidence_par = confidence_par
         if method == 'ap':
-            start = time.time()
-            frequent_itemsets = self.find_freq_itemsets_apriori(data_p[0], support_par)
-            run_time = round(time.time() - start)
-            print("find_freq_itemsets_apriori() -", run_time, "s")
+            rules = pd.DataFrame(apriori(data_p[1], supp=support_par*100, conf=confidence_par*100,
+                                         zmin=1, target='r', report='scl'),
+                                 columns=['consequents', 'antecedents', 'support', 'confidence', 'lift'])
+        #     start = time.time()
+        #     frequent_itemsets = self.find_freq_itemsets_apriori(data_p[1], support_par)
+        #     run_time = round(time.time() - start)
+        #     print("find_freq_itemsets_apriori() -", run_time, "s")
         if method == 'fp':
-            start = time.time()
-            frequent_itemsets = self.find_freq_itemsets_fp_growth(data_p[1], support_par)
-            run_time = round(time.time() - start)
-            print("find_freq_itemsets_fp_growth() -", run_time, "s")
+            rules = pd.DataFrame(fpgrowth(data_p[1], supp=support_par*100, conf=confidence_par*100,
+                                          zmin=1, target='r', report='scl'),
+                                 columns=['consequents', 'antecedents', 'support', 'confidence', 'lift'])
+        #     start = time.time()
+        #     frequent_itemsets = self.find_freq_itemsets_fp_growth(data_p[1], support_par)
+        #     run_time = round(time.time() - start)
+        #     print("find_freq_itemsets_fp_growth() -", run_time, "s")
+        #
+        # rules = association_rules(frequent_itemsets, metric="lift", min_threshold=1)
 
-        rules = association_rules(frequent_itemsets, metric="lift", min_threshold=1)
 
         ## Add column with count of antecedents and consequents for each rule
         rules["antecedent_len"] = rules["antecedents"].apply(lambda x: x.__len__())
-        rules["consequent_len"] = rules["consequents"].apply(lambda x: x.__len__())
+        # rules["consequent_len"] = rules["consequents"].apply(lambda x: x.__len__())
 
         ## Filter rules by parametres
         rules = rules[(rules['lift'] >= lift_par) &
                       (rules['confidence'] >= confidence_par) &
-                      (rules['antecedent_len'] <= 10) &
-                      (rules['consequent_len'] == 1)]
+                      (rules['antecedent_len'] <= 10)]
 
         # users with antedecents from the rules calculated above
         pivot_binary_tr = data_p[0].transpose()
@@ -70,7 +73,7 @@ class MBA():
             pb[user] = products_bought
             suitable_rules = []
             for ante in rules['antecedents'].iteritems():
-                if ante[1].issubset(products_bought):
+                if set([i for i in ante[1]]).issubset(products_bought): # do poprawy
                     suitable_rules.append(ante[0])
             recom[user] = suitable_rules
 
