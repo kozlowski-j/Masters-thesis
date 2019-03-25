@@ -161,27 +161,33 @@ class Rob():
     def comparer(self, test_df, k, algorithm, support_par, confidence_par, results):
         start = time.time()
         recom = results[1]
-        comp = pd.merge(recom[['review_profilename', 'antecedents', 'consequents']],
-                        test_df[['review_profilename', 'beer_id', 'review_overall', 'user_review_count']],
-                        left_on=['review_profilename', 'consequents'],
-                        right_on=['review_profilename', 'beer_id'],
-                        how='right')
-        comp['hit'] = np.where(comp['consequents'] == comp['beer_id'], 1, 0)
-        precision = comp['hit'].sum() / recom.shape[0]
-        recall = comp['hit'].sum() / test_df.shape[0]
-        f1 = (2 * precision * recall) / (precision + recall)
+        if type(recom) != int:
+            comp = pd.merge(recom[['review_profilename', 'antecedents', 'consequents']],
+                            test_df[['review_profilename', 'beer_id', 'review_overall', 'user_review_count']],
+                            left_on=['review_profilename', 'consequents'],
+                            right_on=['review_profilename', 'beer_id'],
+                            how='right')
+            comp['hit'] = np.where(comp['consequents'] == comp['beer_id'], 1, 0)
+            precision = comp['hit'].sum() / recom.shape[0]
+            recall = comp['hit'].sum() / test_df.shape[0]
+            f1 = (2 * precision * recall) / (precision + recall)
+            n_recom = recom.shape[0]
+        else:
+            precision = 0
+            recall = 0
+            f1 = 0
+            n_recom = 0
 
         comp_tab_temp = {'fold': k,
                          'precision': precision,
                          'recall': recall,
                          'f1': f1,
                          'algorithm': algorithm,
-                         'frq itms run_time [s]': results[2],
-                         'mba time [s]': results[3],
-                         'recom_alr_satisf': results[4],
+                         'mba time [s]': results[2],
+                         'recom_alr_satisf': results[3],
                          'min. support': support_par,
                          'min. confidence': confidence_par,
-                         'no. of recom': recom.shape[0]}
+                         'no. of recom': n_recom}
 
         # statistics per user - TO DO
         # prec_users = pd.DataFrame(comp.groupby('review_profilename')['hit'].sum() /
