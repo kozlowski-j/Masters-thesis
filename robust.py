@@ -144,7 +144,7 @@ class Rob():
         avg_rating = round(df[df['beer_name'] == beer_name]['review_overall'].mean(), 2)
         rev_cnt = df[df['beer_name'] == beer_name].index.size
         apprs_cnt = rule_cons[rule_cons['consequents'].isin([beer_id])]['Rule'].unique().size
-        apprs_cnt_prc = rule_cons['Rule'].unique().size
+        apprs_cnt_prc = round(apprs_cnt / rule_cons['Rule'].unique().size, 2)
         print("Beer info:\n"
               "- beer name: {}\n"
               "- brewery name: {}\n"
@@ -183,6 +183,7 @@ class Rob():
                          'recall': recall,
                          'f1': f1,
                          'algorithm': algorithm,
+                         'FIM time [s]': results[4],
                          'mba time [s]': results[2],
                          'recom_alr_satisf': results[3],
                          'min. support': support_par,
