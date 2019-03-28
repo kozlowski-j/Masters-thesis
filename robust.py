@@ -99,22 +99,13 @@ class Rob():
             pivot_beer_ids[col] = pivot_beer_ids[col] * int(col)
         transactions = [[i for i in lst if i != 0] for lst in pivot_beer_ids.values]
 
-        # from mlxtend.preprocessing import TransactionEncoder
-        # te = TransactionEncoder()
-        # te_ary = te.fit(transactions).transform(transactions)
-        # transactions_sparse = te.fit(transactions).transform(transactions, sparse=True)
-        # sparse_df = pd.SparseDataFrame(te_ary, columns=te.columns_, default_fill_value=False)
-        #
         print("prep_data_format() -", round(time.time() - start), "s")
         return pivot_binary, transactions, pivot_df
-        # return sparse_df, transactions_sparse, pivot_df
 
     def create_crossval(self, df_rdy, k_folds):
         '''
         Transforms data frame into test set and train set.
-        // Still needs rethinking and some work on it
-
-        :param df: cleaned df
+        :param df_rdy: cleaned df
         :param k_folds: number of subsets for multiple cross-val
         :return: test_df, train_df
         '''
@@ -197,17 +188,17 @@ class Rob():
         print("comparer() -", round(time.time() - start), "s")
         return comp_tab_temp
 
-    def mbasket_param_analysis(self, df_rdy):
+    def mbasket_param_analysis(df_rdy):
         pivot_df = df_rdy.pivot(index='review_profilename',
-                            columns='beer_id',
-                            values='review_overall')
+                                columns='beer_id',
+                                values='review_overall')
         pivot_df.fillna(0, inplace=True)
         pivot_binary = pivot_df.applymap(lambda x: 1 if x > 0 else 0)
 
         support_table = pd.DataFrame(df_rdy.groupby('beer_id')['beer_id'].count()).sort_values(by='beer_id', ascending=False)
         support_table.columns = ['count']
         support_table['support'] = support_table['count'] / pivot_binary.shape[0]
-        # support_table[support_table['support'] > 0.1].shape
+        support_table = support_table[support_table['support'] > 0.095]
         return support_table
 
 

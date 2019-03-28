@@ -9,6 +9,12 @@ class MBA_fim():
     Market Basket Analysis - apriori
     '''
 
+    def find_rules(self, frequent_itemsets, lift_par, confidence_par):
+        rules = association_rules(frequent_itemsets, metric="lift", min_threshold=1)
+        rules = rules[(rules['lift'] >= lift_par) &
+                      (rules['confidence'] >= confidence_par)]
+        return rules
+
     def mbasket(self, data_p, support_par, confidence_par, method='apriori'):
         """
         :param
@@ -18,17 +24,13 @@ class MBA_fim():
         ## Apriori analysis + association rules creation
         # find association rules with default settings
         lift_par = 1.2
-
+        rules = pd.DataFrame()
         if method == 'fpgrowth':
             start = time()
             frequent_itemsets = pd.DataFrame(fpgrowth(data_p[1], supp=support_par*100, zmin=1,
                                                       target='s', report='s', mode='o'),
                                              columns=['itemsets', 'support'])
-
             run_time = round(time() - start, 3)
-            rules = association_rules(frequent_itemsets, metric="lift", min_threshold=1)
-            rules = rules[(rules['lift'] >= lift_par) &
-                          (rules['confidence'] >= confidence_par)]
             print("fpgrowth() -", run_time, "s")
 
         elif method == 'eclat':
@@ -36,44 +38,28 @@ class MBA_fim():
             frequent_itemsets = pd.DataFrame(eclat(data_p[1], supp=support_par*100, zmin=1,
                                                    target='s', report='s', mode='o'),
                                              columns=['itemsets', 'support'])
-
             run_time = round(time() - start, 3)
-            rules = association_rules(frequent_itemsets, metric="lift", min_threshold=1)
-            rules = rules[(rules['lift'] >= lift_par) &
-                          (rules['confidence'] >= confidence_par)]
             print("eclat() -", run_time, "s")
 
         elif method == 'relim':
             start = time()
             frequent_itemsets = pd.DataFrame(relim(data_p[1], supp=support_par*100, zmin=1, target='s', report='s'),
                                              columns=['itemsets', 'support'])
-
             run_time = round(time() - start, 3)
-            rules = association_rules(frequent_itemsets, metric="lift", min_threshold=1)
-            rules = rules[(rules['lift'] >= lift_par) &
-                          (rules['confidence'] >= confidence_par)]
             print("relim() -", run_time, "s")
 
         elif method == 'sam':
             start = time()
             frequent_itemsets = pd.DataFrame(sam(data_p[1], supp=support_par*100, zmin=1, target='s', report='s'),
                                              columns=['itemsets', 'support'])
-
             run_time = round(time() - start, 3)
-            rules = association_rules(frequent_itemsets, metric="lift", min_threshold=1)
-            rules = rules[(rules['lift'] >= lift_par) &
-                          (rules['confidence'] >= confidence_par)]
             print("sam() -", run_time, "s")
 
         elif method == 'ista':
             start = time()
             frequent_itemsets = pd.DataFrame(ista(data_p[1], supp=support_par*100, zmin=1, report='s'),
                                              columns=['itemsets', 'support'])
-
             run_time = round(time() - start, 3)
-            rules = association_rules(frequent_itemsets, metric="lift", min_threshold=1)
-            rules = rules[(rules['lift'] >= lift_par) &
-                          (rules['confidence'] >= confidence_par)]
             print("ista() -", run_time, "s")
 
         else:
@@ -82,9 +68,7 @@ class MBA_fim():
                                                      report='s', mode='o'),
                                              columns=['itemsets', 'support'])
             run_time = round(time() - start, 3)
-            rules = association_rules(frequent_itemsets, metric="lift", min_threshold=1)
-            rules = rules[(rules['lift'] >= lift_par) &
-                          (rules['confidence'] >= confidence_par)]
+            rules = self.find_rules(frequent_itemsets, lift_par, confidence_par)
             print("apriori() -", run_time, "s")
 
         # users with antedecents from the rules calculated above
