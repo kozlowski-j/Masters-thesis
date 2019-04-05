@@ -59,9 +59,10 @@ class Rob():
             desc_current = {}
             desc_current.update({'column': column,
                                  'size': df[column].size,
-                                 'unique': df[column].unique().size})
+                                 'unique': df[column].unique().size,
+                                 'top3': dict(df[column].value_counts().head(3))})
             desc.append(desc_current)
-        for column in df.select_dtypes('float64').columns:
+        for column in df.select_dtypes(['float64', 'int64']).columns:
             desc_current = {}
             desc_current.update({'column': column,
                                  'size': df[column].size,
@@ -149,7 +150,7 @@ class Rob():
     def limit_reviews(self, df, review_overall_cutoff_value):
         return df[df['review_overall'] >= review_overall_cutoff_value].copy()
 
-    def comparer(self, test_df, k, algorithm, support_par, confidence_par, results):
+    def comparer(self, test_df, k, algorithm, support_par, confidence_par, results, lift_par):
         start = time.time()
         recom = results[1]
         if type(recom) != int:
@@ -179,12 +180,9 @@ class Rob():
                          'recom_alr_satisf': results[3],
                          'min. support': support_par,
                          'min. confidence': confidence_par,
-                         'no. of recom': n_recom}
+                         'no. of recom': n_recom,
+                         'lift_par': lift_par}
 
-        # statistics per user - TO DO
-        # prec_users = pd.DataFrame(comp.groupby('review_profilename')['hit'].sum() /
-        #               recom.groupby('review_profilename')['consequents'].count()).dropna()
-        # prec_users['hits'] = comp.groupby('review_profilename')['hit'].sum().dropna()
         print("comparer() -", round(time.time() - start), "s")
         return comp_tab_temp
 
@@ -201,6 +199,9 @@ class Rob():
         support_table = support_table[support_table['support'] > 0.095]
         return support_table
 
+    def calc_density(self, data_p):
+        density = data_p[0].sum().sum() / (data_p[0].shape[0] * data_p[0].shape[1])
+        return density
 
 
 

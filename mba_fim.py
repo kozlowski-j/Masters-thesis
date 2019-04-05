@@ -10,12 +10,13 @@ class MBA_fim():
     '''
 
     def find_rules(self, frequent_itemsets, lift_par, confidence_par):
+        print('lift_par', lift_par)
         rules = association_rules(frequent_itemsets, metric="lift", min_threshold=1)
         rules = rules[(rules['lift'] >= lift_par) &
                       (rules['confidence'] >= confidence_par)]
         return rules
 
-    def mbasket(self, data_p, support_par, confidence_par, method='apriori'):
+    def mbasket(self, data_p, support_par, confidence_par, method='apriori', lift_par=1.2):
         """
         :param
         :return:
@@ -23,7 +24,6 @@ class MBA_fim():
         start0 = time()
         ## Apriori analysis + association rules creation
         # find association rules with default settings
-        lift_par = 1.2
         rules = pd.DataFrame()
         if method == 'fpgrowth':
             start = time()
